@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"geth/contract"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"io/ioutil"
 	"log"
 	"math/big"
-	"testgeth/contract"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -59,7 +59,7 @@ func main() {
 	auth.GasLimit = uint64(3000000)
 	auth.Nonce = big.NewInt(int64(nonce))
 
-	a, tx, _, err := contract.DeployStorage(auth, client)
+	a, tx, _, err := contract.DeployIncreaseEvent(auth, client)
 	if err != nil {
 		log.Fatal(err)
 	}
