@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"geth/contract"
 	"github.com/ethereum/go-ethereum"
@@ -53,6 +54,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	//DecodeEvent("0000000000000000000000000000000000000000000000000000000062de5b58" + "0000000000000000000000000000000000000000000000000000000000000011")
 	IncreaseIContractID(iContract, auth)
 
 	SubscribeEvent(client, iContract, contractAddress)
@@ -61,6 +63,22 @@ func main() {
 	GetIContractID(iContract)
 	//Store(store, auth, big.NewInt(500))
 	//Retreive(store)
+}
+
+func DecodeEvent(memoryHexString string) {
+	var event NewID
+	vLogData, err := hex.DecodeString(memoryHexString)
+	fmt.Println("vlogData", vLogData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(contract.IncreaseEventMetaData.ABI))
+	err = contractAbi.UnpackIntoInterface(&event, "NewID", vLogData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("DecodeEvent", "date", event.Date, "id", event.Id)
 }
 
 func SubscribeEvent(
@@ -90,11 +108,12 @@ func SubscribeEvent(
 			return
 		case vLog := <-logs:
 			var event NewID
+			fmt.Println("vlog", vLog.Data)
 			err := contractAbi.UnpackIntoInterface(&event, "NewID", vLog.Data)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("vlog", "date", event.Date, "id", event.Id) // pointer to event log
+			fmt.Println("afterUnpack", "date", event.Date, "id", event.Id) // pointer to event log
 
 			return
 		}
