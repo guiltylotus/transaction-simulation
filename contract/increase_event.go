@@ -30,7 +30,7 @@ var (
 
 // IncreaseEventMetaData contains all meta data concerning the IncreaseEvent contract.
 var IncreaseEventMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"date\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"NewID\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"increase\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"date\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"NewID\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"date\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"OldID\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"increase\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 	Bin: "0x608060405234801561001057600080fd5b506101ca806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80636d4ce63c1461003b578063e8927fbc14610059575b600080fd5b610043610063565b60405161005091906100d9565b60405180910390f35b61006161006c565b005b60008054905090565b7f5d03ce126a434a5db3b41c75b2ade4154cf6d904110c5a409ca175f611ebad084260005460405161009f9291906100f4565b60405180910390a16000808154809291906100b99061014c565b9190505550565b6000819050919050565b6100d3816100c0565b82525050565b60006020820190506100ee60008301846100ca565b92915050565b600060408201905061010960008301856100ca565b61011660208301846100ca565b9392505050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b6000610157826100c0565b91507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82036101895761018861011d565b5b60018201905091905056fea264697066735822122069dec9e3d8e7e2c2dcb297106f092f6de1f037542cd6fec4685443443254274c64736f6c634300080f0033",
 }
 
@@ -382,6 +382,141 @@ func (_IncreaseEvent *IncreaseEventFilterer) WatchNewID(opts *bind.WatchOpts, si
 func (_IncreaseEvent *IncreaseEventFilterer) ParseNewID(log types.Log) (*IncreaseEventNewID, error) {
 	event := new(IncreaseEventNewID)
 	if err := _IncreaseEvent.contract.UnpackLog(event, "NewID", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IncreaseEventOldIDIterator is returned from FilterOldID and is used to iterate over the raw logs and unpacked data for OldID events raised by the IncreaseEvent contract.
+type IncreaseEventOldIDIterator struct {
+	Event *IncreaseEventOldID // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IncreaseEventOldIDIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IncreaseEventOldID)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IncreaseEventOldID)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IncreaseEventOldIDIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IncreaseEventOldIDIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IncreaseEventOldID represents a OldID event raised by the IncreaseEvent contract.
+type IncreaseEventOldID struct {
+	Date *big.Int
+	Id   *big.Int
+	Raw  types.Log // Blockchain specific contextual infos
+}
+
+// FilterOldID is a free log retrieval operation binding the contract event 0xec5ec5474b58f382ce897fbea318f1a94104f0962132b46972742df337dd1487.
+//
+// Solidity: event OldID(uint256 date, uint256 id)
+func (_IncreaseEvent *IncreaseEventFilterer) FilterOldID(opts *bind.FilterOpts) (*IncreaseEventOldIDIterator, error) {
+
+	logs, sub, err := _IncreaseEvent.contract.FilterLogs(opts, "OldID")
+	if err != nil {
+		return nil, err
+	}
+	return &IncreaseEventOldIDIterator{contract: _IncreaseEvent.contract, event: "OldID", logs: logs, sub: sub}, nil
+}
+
+// WatchOldID is a free log subscription operation binding the contract event 0xec5ec5474b58f382ce897fbea318f1a94104f0962132b46972742df337dd1487.
+//
+// Solidity: event OldID(uint256 date, uint256 id)
+func (_IncreaseEvent *IncreaseEventFilterer) WatchOldID(opts *bind.WatchOpts, sink chan<- *IncreaseEventOldID) (event.Subscription, error) {
+
+	logs, sub, err := _IncreaseEvent.contract.WatchLogs(opts, "OldID")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IncreaseEventOldID)
+				if err := _IncreaseEvent.contract.UnpackLog(event, "OldID", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOldID is a log parse operation binding the contract event 0xec5ec5474b58f382ce897fbea318f1a94104f0962132b46972742df337dd1487.
+//
+// Solidity: event OldID(uint256 date, uint256 id)
+func (_IncreaseEvent *IncreaseEventFilterer) ParseOldID(log types.Log) (*IncreaseEventOldID, error) {
+	event := new(IncreaseEventOldID)
+	if err := _IncreaseEvent.contract.UnpackLog(event, "OldID", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

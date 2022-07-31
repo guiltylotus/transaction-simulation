@@ -25,7 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	client, err := ethclient.Dial("http://127.0.0.1:8545")
+	client, err := ethclient.Dial("/Users/nguyenducminh/Library/Ethereum/goerli/geth.ipc")
 	if err != nil {
 		panic(err)
 	}

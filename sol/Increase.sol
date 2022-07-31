@@ -10,11 +10,16 @@ contract IncreaseEvents {
         uint256 date,
         uint256 id
     );
+    event OldID(
+        uint256 date,
+        uint256 id
+    );
     uint256 id;
 
     function increase() external  {
-        emit NewID(block.timestamp, id);
+        emit OldID(block.timestamp, id);
         id++;
+        emit NewID(block.timestamp, id);
     }
 
     function get() public view returns (uint256) {
