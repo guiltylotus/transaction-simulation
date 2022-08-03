@@ -6,7 +6,7 @@ replace github.com/ethereum/go-ethereum v1.10.20 => /Users/nguyenducminh/Lotus/P
 
 require (
 	github.com/ethereum/go-ethereum v1.10.20
-	github.com/holiman/uint256 v1.2.0
+	github.com/pkg/errors v0.9.1
 )
 
 require (
