@@ -1,16 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
-	"geth/contract"
 	"geth/contract/dai"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"math/big"
 	"strconv"
 	"strings"
@@ -110,8 +112,23 @@ func main() {
 	startTime := time.Now()
 	client := NewRPCClient("/Users/nguyenducminh/ethdata/geth.ipc")
 	//client := NewRPCClient("/Users/nguyenducminh/Library/Ethereum/goerli/geth.ipc")
-	structLogs := client.GetStructLogs()
-	client.GetEtherKyberSwapLosgs(structLogs)
+	client.GetTotalSupply(
+		"0x6b175474e89094c44da98b954eedeac495271d0f",
+		"1",
+	)
+	client.GetBalanceOf(
+		"0x6b175474e89094c44da98b954eedeac495271d0f",
+		"0xef09879057a9ad798438f3ba561bcdd293d72fc7",
+		"2",
+	)
+	client.GetAllowanceIndex(
+		"0x6b175474e89094c44da98b954eedeac495271d0f",
+		"0xef09879057a9ad798438f3ba561bcdd293d72fc7",
+		"0x00555513acf282b42882420e5e5ba87b44d8fa6e",
+		"3",
+	)
+	//structLogs := client.GetStructLogs()
+	//client.GetEtherKyberSwapLosgs(structLogs)
 	//client.GetGoerliLogs(structLogs)
 	fmt.Println("Execution time: ", time.Now().Sub(startTime))
 }
@@ -282,90 +299,18 @@ func (rc *RpcClient) GetEtherKyberSwapLosgs(structLogs []StructLog) {
 		case logApprovalEvent.Hex():
 			fmt.Println("This is pproval event")
 			continue
-			//var event Approval
-			//err = contractAbi.UnpackIntoInterface(&event, "Approval", vLogData)
-			//if err != nil {
-			//	fmt.Println("ERR logApprovalEvent", err)
-			//	continue
-			//	//panic(err)
-			//}
-			//fmt.Println(
-			//	"DecodeEvent",
-			//	"Owner", event.Owner,
-			//	"Spender", event.Spender,
-			//	"Value", event.Value,
-			//)
 		case logTransferEvent.Hex():
 			fmt.Println("This is Transfer event")
 			continue
-			//var event Transfer
-			//err = contractAbi.UnpackIntoInterface(&event, "Transfer", vLogData)
-			//if err != nil {
-			//	fmt.Println("ERR logApprovalEvent", err)
-			//	continue
-			//	//panic(err)
-			//}
-			//fmt.Println(
-			//	"DecodeEvent",
-			//	"From", event.From,
-			//	"Spender", event.To,
-			//	"Value", event.Value,
-			//)
 		default:
 			fmt.Println("Not match any event")
 		}
 	}
 }
 
-func (rc *RpcClient) GetGoerliLogs(structLogs []StructLog) {
-	// type of log events
-	logNewIDSig := []byte("NewID(uint256,uint256)")
-	LogOldIDSig := []byte("OldID(uint256,uint256)")
-
-	logNewIDSigHash := crypto.Keccak256Hash(logNewIDSig)
-	logOldIDSigHash := crypto.Keccak256Hash(LogOldIDSig)
-
-	logNewIDEvent := common.HexToHash(logNewIDSigHash.String())
-	logOldIDEvent := common.HexToHash(logOldIDSigHash.String())
-
-	// contractABI
-	contractAbi, err := abi.JSON(strings.NewReader(contract.IncreaseEventMetaData.ABI))
-	if err != nil {
-		panic(err)
-	}
-
-	for _, log := range structLogs {
-		if log.Op != "LOG1" {
-			continue
-		}
-		topics, memoryHexString := rc.GetTopicAndData(log)
-		vLogData, err := hex.DecodeString(memoryHexString)
-		if err != nil {
-			panic(err)
-		}
-
-		switch topics[0] {
-		case logNewIDEvent.Hex():
-			var event NewID
-			err = contractAbi.UnpackIntoInterface(&event, "NewID", vLogData)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println("DecodeEvent", "date", event.Date, "id", event.Id)
-		case logOldIDEvent.Hex():
-			var event OldID
-			err = contractAbi.UnpackIntoInterface(&event, "OldID", vLogData)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println("DecodeEvent", "date", event.Date, "id", event.Id)
-		}
-	}
-}
-
 func (rc *RpcClient) GetTopicAndData(log StructLog) ([]string, string) {
-	offset := hex2int(log.Stack[len(log.Stack)-1])
-	length := hex2int(log.Stack[len(log.Stack)-2])
+	offset := hex2decimal(log.Stack[len(log.Stack)-1])
+	length := hex2decimal(log.Stack[len(log.Stack)-2])
 
 	hexMemory := strings.Join(log.Memory[:], "")
 	byteMemory, err := hex.DecodeString(hexMemory)
@@ -391,11 +336,159 @@ func (rc *RpcClient) GetTopicAndData(log StructLog) ([]string, string) {
 	return topics, memory
 }
 
-func hex2int(hexStr string) uint64 {
+func hex2decimal(hexStr string) uint64 {
 	// remove 0x suffix if found in the input string
 	cleaned := strings.Replace(hexStr, "0x", "", -1)
 
 	// base 16 for hexadecimal
 	result, _ := strconv.ParseUint(cleaned, 16, 64)
 	return uint64(result)
+}
+
+func replaceHexPrefix(hexStr string) string {
+	cleaned := strings.Replace(hexStr, "0x", "", -1)
+	return cleaned
+}
+
+func paddingZero(hexStr string) string {
+	return fmt.Sprintf("%064v", hexStr)
+}
+
+func toHashString(hexStr string) string {
+	str := strings.Replace(hexStr, "0x", "", -1)
+	str = strings.ToLower(str)
+	return fmt.Sprintf("%064v", str)
+}
+
+func (rc *RpcClient) GetTotalSupply(contractAddress string, slot string) {
+	//intSlot, err := strconv.ParseUint(slot, 10, 64)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//hexSlot := hexutil.EncodeUint64(intSlot)
+	fmt.Println("hexSlot", slot)
+
+	client, err := ethclient.Dial("/Users/nguyenducminh/ethdata/geth.ipc")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("index", common.HexToHash(slot))
+
+	data, err := client.StorageAt(
+		context.Background(),
+		common.HexToAddress(contractAddress),
+		common.HexToHash(slot),
+		nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// contractABI
+	contractAbi, err := abi.JSON(strings.NewReader(dai.ContractMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+	totalSupply, err := contractAbi.Unpack("totalSupply", data)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("totalSupply", totalSupply)
+}
+
+func (rc *RpcClient) GetBalanceOf(contractAddress string, owner string, slot string) {
+	fmt.Println("--------GetBalanceOf")
+	client, err := ethclient.Dial("/Users/nguyenducminh/ethdata/geth.ipc")
+	if err != nil {
+		panic(err)
+	}
+
+	slot = toHashString(slot)
+	fmt.Println("slot", slot)
+
+	owner = toHashString(owner)
+	fmt.Println("owner", owner)
+
+	index := solsha3.SoliditySHA3(
+		// types
+		[]string{"address", "uint256"},
+
+		// values
+		[]interface{}{
+			owner,
+			slot,
+		},
+	)
+
+	fmt.Println("Index", index)
+
+	state, err := client.StorageAt(
+		context.Background(),
+		common.HexToAddress(contractAddress),
+		common.BytesToHash(index), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(dai.ContractMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+	balanceOf, err := contractAbi.Unpack("balanceOf", state)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("balanceOf", balanceOf)
+}
+
+func (rc *RpcClient) GetAllowanceIndex(contractAddress string, owner string, spender string, slot string) {
+	fmt.Println("--------_GetAllowanceIndex")
+	client, err := ethclient.Dial("/Users/nguyenducminh/ethdata/geth.ipc")
+	if err != nil {
+		panic(err)
+	}
+
+	slot = toHashString(slot)
+	fmt.Println("slot", slot)
+	owner = toHashString(owner)
+	fmt.Println("owner", owner)
+	temp := solsha3.SoliditySHA3(
+		// types
+		[]string{"address", "uint256"},
+
+		// values
+		[]interface{}{
+			owner,
+			slot,
+		},
+	)
+
+	tempStr := toHashString(common.BytesToHash(temp).String())
+	spender = toHashString(spender)
+	fmt.Println("spender", spender)
+	index := solsha3.SoliditySHA3(
+		// types
+		[]string{"address", "address"},
+
+		// values
+		[]interface{}{
+			spender,
+			tempStr,
+		},
+	)
+
+	state, err := client.StorageAt(context.Background(), common.HexToAddress(contractAddress), common.BytesToHash(index), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(dai.ContractMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+	allowance, err := contractAbi.Unpack("allowance", state)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("allowance", allowance)
 }
