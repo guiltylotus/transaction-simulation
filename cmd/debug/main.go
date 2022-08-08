@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"geth/contract"
@@ -8,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	solsha3 "github.com/miguelmota/go-solidity-sha3"
 	"math/big"
@@ -26,27 +27,6 @@ type NewID struct {
 type OldID struct {
 	Date *big.Int
 	Id   *big.Int
-}
-
-type EthTransactionArgs struct {
-	From                 *common.Address `json:"from"`
-	To                   *common.Address `json:"to"`
-	Gas                  *hexutil.Uint64 `json:"gas"`
-	GasPrice             *hexutil.Big    `json:"gasPrice"`
-	MaxFeePerGas         *hexutil.Big    `json:"maxFeePerGas"`
-	MaxPriorityFeePerGas *hexutil.Big    `json:"maxPriorityFeePerGas"`
-	Value                *hexutil.Big    `json:"value"`
-	Nonce                *hexutil.Uint64 `json:"nonce"`
-
-	// We accept "data" and "input" for backwards-compatibility reasons.
-	// "input" is the newer name and should be preferred by clients.
-	// Issue detail: https://github.com/ethereum/go-ethereum/issues/15628
-	Data  *hexutil.Bytes `json:"data"`
-	Input *hexutil.Bytes `json:"input"`
-
-	// Introduced by AccessListTxType transaction.
-	AccessList *types.AccessList `json:"accessList,omitempty"`
-	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
 }
 
 type TransactionArgs struct {
@@ -100,13 +80,27 @@ type DebugTraceCallResponse struct {
 	StructLogs  []StructLog `json:"structLogs"`
 }
 
+type EthCallResponse struct {
+	data    hexutil.Bytes // The return data from the call
+	gasUsed uint64        // The amount of gas used
+	status  uint64        // The return status of the call - 0 for failure or 1 for success.
+}
+
 type RpcClient struct {
-	Client *rpc.Client
+	Client    *rpc.Client
+	EthClient *ethclient.Client
 }
 
 var (
 	daiContract      = "0x6b175474e89094c44da98b954eedeac495271d0f"
 	daiBalanceOfSlot = "2"
+	daiAllowanceSlot = "3"
+
+	kncContract      = "0xdeFA4e8a7bcBA345F687a2f1456F5Edd9CE97202"
+	kncAllowanceSlot = "102"
+
+	router = "0x00555513acf282b42882420e5e5ba87b44d8fa6e"
+	wallet = "0xef09879057a9ad798438f3ba561bcdd293d72fc7"
 )
 
 func main() {
@@ -116,8 +110,9 @@ func main() {
 	startTime := time.Now()
 	client := NewRPCClient("/Users/nguyenducminh/ethdata/geth.ipc")
 	//client := NewRPCClient("/Users/nguyenducminh/Library/Ethereum/goerli/geth.ipc")
-	structLogs := client.GetStructLogs()
-	client.GetEtherKyberSwapLosgs(structLogs)
+	client.GetTokenBalanceOf()
+	//structLogs := client.GetStructLogs()
+	//client.GetEtherKyberSwapLosgs(structLogs)
 	//client.GetGoerliLogs(structLogs)
 	fmt.Println("Execution time: ", time.Now().Sub(startTime))
 }
@@ -129,17 +124,71 @@ func NewRPCClient(address string) *RpcClient {
 	if err != nil {
 		panic(err)
 	}
+	rpcClient.EthClient = ethclient.NewClient(rpcClient.Client)
+	if err != nil {
+		panic(err)
+	}
 	return rpcClient
+}
+
+func (rc *RpcClient) GetTokenBalanceOf() {
+	indexDaiBalanceOf := rc.GetIndexBalanceOf(wallet, daiBalanceOfSlot)
+	fmt.Println("indexDaiBalanceOf", indexDaiBalanceOf)
+	//rc.GetBalanceOf(daiContract, indexDaiBalanceOf)
+
+	indexDaiAllowance := rc.GetIndexAllowance(wallet, router, daiAllowanceSlot)
+	fmt.Println("indexDaiAllowance", indexDaiAllowance)
+
+	fakeBalance := "0x" + toHashString("0x8AC7230489E80000")
+	fmt.Println("fakeBalance", fakeBalance)
+
+	fakeAllowance := "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+	fmt.Println("fakeAllowance", fakeAllowance)
+	//{"params":[{"from":"0x0000000000000000000000000000000000000000",
+	//	"data":"0x70a08231000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc7",
+	//	"to":"0x6b175474e89094c44da98b954eedeac495271d0f"}]}
+	objectEthCall := TransactionArgs{
+		From:     "0x0000000000000000000000000000000000000000",
+		To:       daiContract,
+		GasPrice: "0x9502F9000",
+		Gas:      "0x7A1200",
+		//Value: "0x8AC7230489E80000",
+		Input: "0x70a08231000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc7",
+	}
+
+	configEthCall := StateOverride{
+		"0xef09879057a9ad798438f3ba561bcdd293d72fc7": OverrideAccount{
+			Balance: "0x56BC75E2D63100000",
+		},
+		daiContract: OverrideAccount{
+			StateDiff: map[string]string{
+				indexDaiBalanceOf.String(): fakeBalance,
+				indexDaiAllowance.String(): fakeAllowance,
+			},
+		},
+	}
+
+	var responseEthCall *string
+
+	if err := rc.Client.Call(
+		responseEthCall,
+		"eth_call",
+		objectEthCall,
+		"latest", configEthCall); err != nil {
+		panic(err)
+	}
+
+	fmt.Println(responseEthCall)
 }
 
 func (rc *RpcClient) GetStructLogs() []StructLog {
 	object := TransactionArgs{
-		From:     "0xef09879057a9ad798438f3ba561bcdd293d72fc7",
-		To:       "0x00555513acf282b42882420e5e5ba87b44d8fa6e",
+		From:     wallet,
+		To:       router,
 		GasPrice: "0x9502F9000",
 		Gas:      "0x7A1200",
-		Value:    "0x8AC7230489E80000",
-		Input:    "0xabcffc2600000000000000000000000041684b361557e9282e0373ca51260d9331e518c90000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000006a00000000000000000000000001af3f329e8be154074d8769d1ffa4ee058b1dbc3000000000000000000000000fe56d5892bdffc7bf58f2e84be1b2c32d21c308b00000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc700000000000000000000000000000000000000000000003635c9adc5dea0000000000000000000000000000000000000000000000000001710ab951157199b42000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000480000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000062ecc2bd0000000000000000000000000000000000000000000000000000000000000440000000000000000000000000000000000000000000000000000000000000000100000000000000000000000066fdb2eccfb58cf098eaa419e5efde841368e489000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000003635c9adc5dea000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000c000000000000000000000000066fdb2eccfb58cf098eaa419e5efde841368e4890000000000000000000000001af3f329e8be154074d8769d1ffa4ee058b1dbc3000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d5600000000000000000000000001f1af8439639694593284ecb0ef1e16cef8de43000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000c000000000000000000000000001f1af8439639694593284ecb0ef1e16cef8de43000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d56000000000000000000000000fe56d5892bdffc7bf58f2e84be1b2c32d21c308b000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
+		//Value:    "0x8AC7230489E80000",
+		Input: "0xabcffc2600000000000000000000000041684b361557e9282e0373ca51260d9331e518c90000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000009200000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000defa4e8a7bcba345f687a2f1456f5edd9ce9720200000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000160000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc70000000000000000000000000000000000000000000000056bc75e2d6310000000000000000000000000000000000000000000000000000364b8055eef9f03f1000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000041684b361557e9282e0373ca51260d9331e518c900000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000056bc75e2d63100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000defa4e8a7bcba345f687a2f1456f5edd9ce9720200000000000000000000000000000000000000000000000364b8055eef9f03f1000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc70000000000000000000000000000000000000000000000000000000062ecf87b0000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000b20bd5d04be54f870d5c0d3ca85d82b34b8364050000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000041684b361557e9282e0373ca51260d9331e518c90000000000000000000000000000000000000000000000056bc75e2d6310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000060100000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000ba12222222228d8ba445958a75a0704d566bf2c806df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000000000000000000000000000000000000005f6870f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000005010000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000088e6a0c2ddd26feeb64f039a2c41296fcb3f5640000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000000000005f688c70000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000061639d6ec06c13a96b5eb9560b359d7c648c7759000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000defa4e8a7bcba345f687a2f1456f5edd9ce97202000000000000000000000000ef09879057a9ad798438f3ba561bcdd293d72fc7000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
 	}
 	// Goerli
 	//object := TransactionArgs{
@@ -150,9 +199,21 @@ func (rc *RpcClient) GetStructLogs() []StructLog {
 	//	Input:    "0xe8927fbc",
 	//}
 
-	indexBalanceOf := rc.GetIndexBalanceOf("0xef09879057a9ad798438f3ba561bcdd293d72fc7", daiBalanceOfSlot)
+	indexDaiBalanceOf := rc.GetIndexBalanceOf(wallet, daiBalanceOfSlot)
+	fmt.Println("indexDaiBalanceOf", indexDaiBalanceOf)
+	//rc.GetBalanceOf(daiContract, indexDaiBalanceOf)
+
+	indexDaiAllowance := rc.GetIndexAllowance(wallet, router, daiAllowanceSlot)
+	fmt.Println("indexDaiAllowance", indexDaiAllowance)
+
+	indexKncAllowance := rc.GetIndexAllowance(wallet, router, kncAllowanceSlot)
+	fmt.Println("indexKncAllowance", indexKncAllowance)
+
 	fakeBalance := "0x" + toHashString("0x8AC7230489E80000")
 	fmt.Println("fakeBalance", fakeBalance)
+
+	fakeAllowance := "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+	fmt.Println("fakeAllowance", fakeAllowance)
 
 	config := TraceConfig{
 		DisableStorage:   false,
@@ -167,7 +228,13 @@ func (rc *RpcClient) GetStructLogs() []StructLog {
 			},
 			daiContract: OverrideAccount{
 				StateDiff: map[string]string{
-					indexBalanceOf: fakeBalance,
+					indexDaiBalanceOf.String(): fakeBalance,
+					indexDaiAllowance.String(): fakeAllowance,
+				},
+			},
+			kncContract: OverrideAccount{
+				StateDiff: map[string]string{
+					indexKncAllowance.String(): fakeAllowance,
 				},
 			},
 		},
@@ -175,10 +242,19 @@ func (rc *RpcClient) GetStructLogs() []StructLog {
 
 	structLogs := make([]StructLog, 0, 0)
 	response := &DebugTraceCallResponse{}
+
 	if err := rc.Client.Call(response, "debug_traceCall", object, "latest", config); err != nil {
 		panic(err)
 	}
 	fmt.Println(response.Failed)
+	if response.Failed {
+		returnValueString, err := hex.DecodeString(response.ReturnValue)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("returnValueString", string(returnValueString))
+		panic("Call Failed")
+	}
 	fmt.Println(response.ReturnValue)
 	fmt.Println(response.Gas)
 	for _, structLog := range response.StructLogs {
@@ -211,6 +287,10 @@ func (rc *RpcClient) GetEtherKyberSwapLosgs(structLogs []StructLog) {
 		Pair      common.Address
 		AmountOut *big.Int
 		Output    common.Address
+	}
+
+	type ErrorEvent struct {
+		Reason string
 	}
 
 	type Approval struct {
@@ -248,6 +328,12 @@ func (rc *RpcClient) GetEtherKyberSwapLosgs(structLogs []StructLog) {
 	logSwappedSigHash := crypto.Keccak256Hash(logSwappedSig)
 	logSwappedEvent := common.HexToHash(logSwappedSigHash.String())
 	//fmt.Println("---logSwappedEvent: ", logSwappedEvent.Hex())
+
+	// Error
+	logErrorSig := []byte("Error(string)")
+	logErrorSigHash := crypto.Keccak256Hash(logErrorSig)
+	logErrorEvent := common.HexToHash(logErrorSigHash.String())
+	//fmt.Println("---logErrorEvent: ", logErrorEvent.Hex())
 
 	// contractABI
 	contractAbi, err := abi.JSON(strings.NewReader(dai.ContractMetaData.ABI))
@@ -295,6 +381,16 @@ func (rc *RpcClient) GetEtherKyberSwapLosgs(structLogs []StructLog) {
 				"AmountOut", event.AmountOut,
 				"Output", event.Output,
 			)
+		case logErrorEvent.Hex():
+			var event ErrorEvent
+			err = contractAbi.UnpackIntoInterface(&event, "Error", vLogData)
+			if err != nil {
+				fmt.Println("ERR ErrorEvent", err)
+			}
+			fmt.Println("Decode Error Event",
+				"Reason", event.Reason,
+			)
+			continue
 		case logApprovalEvent.Hex():
 			fmt.Println("This is pproval event")
 			continue
@@ -426,7 +522,38 @@ func toHashString(hexStr string) string {
 	return fmt.Sprintf("%064v", str)
 }
 
-func (rc *RpcClient) GetIndexBalanceOf(owner string, slot string) string {
+func (rc *RpcClient) GetBalanceOf(contractAddress string, index common.Hash) {
+	state, err := rc.EthClient.StorageAt(
+		context.Background(),
+		common.HexToAddress(contractAddress),
+		index, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	contractAbi, err := abi.JSON(strings.NewReader(dai.ContractMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+	balanceOf, err := contractAbi.Unpack("balanceOf", state)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Storage At: balanceOf", balanceOf)
+
+	realByteState, err := hex.DecodeString("000000000000000000000000000000000000000000000000DC11DF3655EF0D3E")
+	if err != nil {
+		panic(err)
+	}
+	checkBalanceOf, err := contractAbi.Unpack("balanceOf", realByteState)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Storage At: CheckBalanceOf", checkBalanceOf)
+
+}
+
+func (rc *RpcClient) GetIndexBalanceOf(owner string, slot string) common.Hash {
 	slot = toHashString(slot)
 	owner = toHashString(owner)
 
@@ -440,14 +567,12 @@ func (rc *RpcClient) GetIndexBalanceOf(owner string, slot string) string {
 			slot,
 		},
 	)
-	return common.BytesToHash(index).String()
+	return common.BytesToHash(index)
 }
 
-func (rc *RpcClient) GetAllowanceIndex(owner string, spender string, slot string) {
+func (rc *RpcClient) GetIndexAllowance(owner string, spender string, slot string) common.Hash {
 	slot = toHashString(slot)
-	fmt.Println("slot", slot)
 	owner = toHashString(owner)
-	fmt.Println("owner", owner)
 	temp := solsha3.SoliditySHA3(
 		// types
 		[]string{"address", "uint256"},
@@ -458,10 +583,8 @@ func (rc *RpcClient) GetAllowanceIndex(owner string, spender string, slot string
 			slot,
 		},
 	)
-
 	tempStr := toHashString(common.BytesToHash(temp).String())
 	spender = toHashString(spender)
-	fmt.Println("spender", spender)
 	index := solsha3.SoliditySHA3(
 		// types
 		[]string{"address", "address"},
@@ -472,5 +595,5 @@ func (rc *RpcClient) GetAllowanceIndex(owner string, spender string, slot string
 			tempStr,
 		},
 	)
-	fmt.Println("index", index)
+	return common.BytesToHash(index)
 }
