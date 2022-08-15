@@ -30,7 +30,7 @@ var (
 
 // ContractMetaData contains all meta data concerning the Contract contract.
 var ContractMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenIn\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenOut\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"simswap\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"token1Diff\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"token2Diff\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"}],\"name\":\"getallowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"token1Diff\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenIn\",\"type\":\"address\"}],\"name\":\"getbalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"token1Diff\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenIn\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenOut\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"simswap\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"token1Diff\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"token2Diff\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
 }
 
 // ContractABI is the input ABI used to generate the binding from.
@@ -198,6 +198,48 @@ func (_Contract *ContractSession) Approve(token common.Address, spender common.A
 // Solidity: function approve(address token, address spender) returns(uint256)
 func (_Contract *ContractTransactorSession) Approve(token common.Address, spender common.Address) (*types.Transaction, error) {
 	return _Contract.Contract.Approve(&_Contract.TransactOpts, token, spender)
+}
+
+// Getallowance is a paid mutator transaction binding the contract method 0x21c4f09f.
+//
+// Solidity: function getallowance(address token, address router) payable returns(uint256 token1Diff)
+func (_Contract *ContractTransactor) Getallowance(opts *bind.TransactOpts, token common.Address, router common.Address) (*types.Transaction, error) {
+	return _Contract.contract.Transact(opts, "getallowance", token, router)
+}
+
+// Getallowance is a paid mutator transaction binding the contract method 0x21c4f09f.
+//
+// Solidity: function getallowance(address token, address router) payable returns(uint256 token1Diff)
+func (_Contract *ContractSession) Getallowance(token common.Address, router common.Address) (*types.Transaction, error) {
+	return _Contract.Contract.Getallowance(&_Contract.TransactOpts, token, router)
+}
+
+// Getallowance is a paid mutator transaction binding the contract method 0x21c4f09f.
+//
+// Solidity: function getallowance(address token, address router) payable returns(uint256 token1Diff)
+func (_Contract *ContractTransactorSession) Getallowance(token common.Address, router common.Address) (*types.Transaction, error) {
+	return _Contract.Contract.Getallowance(&_Contract.TransactOpts, token, router)
+}
+
+// Getbalance is a paid mutator transaction binding the contract method 0x68116177.
+//
+// Solidity: function getbalance(address tokenIn) payable returns(uint256 token1Diff)
+func (_Contract *ContractTransactor) Getbalance(opts *bind.TransactOpts, tokenIn common.Address) (*types.Transaction, error) {
+	return _Contract.contract.Transact(opts, "getbalance", tokenIn)
+}
+
+// Getbalance is a paid mutator transaction binding the contract method 0x68116177.
+//
+// Solidity: function getbalance(address tokenIn) payable returns(uint256 token1Diff)
+func (_Contract *ContractSession) Getbalance(tokenIn common.Address) (*types.Transaction, error) {
+	return _Contract.Contract.Getbalance(&_Contract.TransactOpts, tokenIn)
+}
+
+// Getbalance is a paid mutator transaction binding the contract method 0x68116177.
+//
+// Solidity: function getbalance(address tokenIn) payable returns(uint256 token1Diff)
+func (_Contract *ContractTransactorSession) Getbalance(tokenIn common.Address) (*types.Transaction, error) {
+	return _Contract.Contract.Getbalance(&_Contract.TransactOpts, tokenIn)
 }
 
 // Simswap is a paid mutator transaction binding the contract method 0x96d27420.
