@@ -17,7 +17,6 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -65,19 +64,19 @@ var (
 
 func InitCommonContract() *OverrideAccounts {
 	indexDaiBalanceOf := getIndexBalanceOf(MyWallet.String(), DAIBalanceOfSlot)
-	//fmt.Println("indexDaiBalanceOf", indexDaiBalanceOf)
+	fmt.Println("indexDaiBalanceOf", indexDaiBalanceOf)
 
 	indexDaiAllowance := getIndexAllowance(MyWallet.String(), SimSwapAddress.String(), DAIAllowanceSlot)
-	//fmt.Println("indexDaiAllowance", indexDaiAllowance)
+	fmt.Println("indexDaiAllowance", indexDaiAllowance)
 
 	indexKncAllowance := getIndexAllowance(MyWallet.String(), SimSwapAddress.String(), KNCAllowanceSlot)
-	//fmt.Println("indexKncAllowance", indexKncAllowance)
+	fmt.Println("indexKncAllowance", indexKncAllowance)
 
 	fakeBalance := "0x" + toHashString("0x3635C9ADC5DEA00000")
-	//fmt.Println("fakeBalance", fakeBalance)
+	fmt.Println("fakeBalance", fakeBalance)
 
 	fakeAllowance := "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-	//fmt.Println("fakeAllowance", fakeAllowance)
+	fmt.Println("fakeAllowance", fakeAllowance)
 
 	return &OverrideAccounts{
 		SimSwapAddress: {
@@ -108,16 +107,6 @@ func main() {
 	// https://etherscan.io/tx/0x606e8c8084855d3fb20cb1c69f520d0a1feae6c35a9d3659a9cda8a1cf53e9e2#eventlog
 	//rawurl := "https://proxy.kyberengineering.io/ethereum" // "http://localhost:8545/" //  "https://mainnet.infura.io/v3/3d85e3bded764846bc25e1ca36f73b91" // "https://proxy.kyberengineering.io/ethereum"
 	rawurl := "https://mainnet.infura.io/v3/c8a0f577c41240ab90d542d4c1f9f1ba"
-	//client, err := ethclient.Dial(rawurl)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//block, err := client.BlockNumber(context.Background())
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println("Block", block)
 
 	// Generate EncodedSwapData
 	simClient, err := NewClient(rawurl, SimSwapAddress, commonContract)
@@ -128,15 +117,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	//data, err := ab.Pack("simswap", DAIContract, KNCContract, Router, common.Hex2Bytes(InputData))
-	//data, err := ab.Pack("getbalance", DAIContract)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//data, err := ab.Pack("getallowance", DAIContract, Router)
-	//if err != nil {
-	//	panic(err)
-	//}
 	data, err := ab.Pack("simswap", DAIContract, KNCContract, Router, hexutil.MustDecode(InputData))
 	if err != nil {
 		panic(err)
@@ -156,8 +136,6 @@ func main() {
 		panic(err)
 	}
 
-	//fmt.Println(res)
-	//fmt.Println(common.Bytes2Hex(res))
 	result, err := ab.Unpack("simswap", res)
 	if err != nil {
 		panic(err)
@@ -174,11 +152,6 @@ func NewClient(rpcURL string, simAddress common.Address, commonContract *Overrid
 	if err != nil {
 		return nil, err
 	}
-
-	//simUtil, err := contract.NewSimCall(simAddress, sc)
-	//if err != nil {
-	//	return nil, errors.WithMessage(err, "create simUtil")
-	//}
 
 	return sc, nil
 }
@@ -222,11 +195,6 @@ func (r roundTripperExt) RoundTrip(request *http.Request) (*http.Response, error
 	}
 	var req reqMessage
 	if err := json.Unmarshal(body, &req); err == nil {
-		/*
-			req.Method == "eth_call" &&
-			(bytes.Contains(req.Params[0], []byte(`0x99f9fbd2`)) ||
-			bytes.Contains(req.Params[0], []byte(`0x110bb26c`)))
-		*/
 		if req.Method == "eth_call" {
 			req.Params = append(req.Params, r.appendData)
 		}
@@ -303,13 +271,4 @@ func getIndexAllowance(owner string, spender string, slot string) common.Hash {
 		},
 	)
 	return common.BytesToHash(index)
-}
-
-func hex2int(hexStr string) uint64 {
-	// remove 0x suffix if found in the input string
-	cleaned := strings.Replace(hexStr, "0x", "", -1)
-
-	// base 16 for hexadecimal
-	result, _ := strconv.ParseUint(cleaned, 16, 64)
-	return uint64(result)
 }
