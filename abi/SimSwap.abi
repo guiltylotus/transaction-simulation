@@ -27,49 +27,6 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "router",
-				"type": "address"
-			}
-		],
-		"name": "getallowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "token1Diff",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "tokenIn",
-				"type": "address"
-			}
-		],
-		"name": "getbalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "token1Diff",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "tokenIn",
 				"type": "address"
 			},
@@ -100,6 +57,11 @@
 				"internalType": "uint256",
 				"name": "token2Diff",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "callResult",
+				"type": "bytes"
 			}
 		],
 		"stateMutability": "payable",
