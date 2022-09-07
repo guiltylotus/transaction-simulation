@@ -35,20 +35,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 0x Protocol (ZRX) token address
-	contractAddress := common.HexToAddress("0x6b175474e89094c44da98b954eedeac495271d0f")
-	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(15471000),
-		ToBlock:   big.NewInt(15477408),
-		Addresses: []common.Address{
-			contractAddress,
-		},
-	}
-
-	logs, err := client.FilterLogs(context.Background(), query)
-	if err != nil {
-		log.Fatal(err)
-	}
 	contractAbi, err := abi.JSON(strings.NewReader(dai.ContractMetaData.ABI))
 	if err != nil {
 		log.Fatal(err)
@@ -58,6 +44,22 @@ func main() {
 	LogApprovalSig := []byte("Approval(address,address,uint256)")
 	//logTransferSigHash := crypto.Keccak256Hash(logTransferSig)
 	logApprovalSigHash := crypto.Keccak256Hash(LogApprovalSig)
+
+	// 0x Protocol (ZRX) token address
+	contractAddress := common.HexToAddress("0xdAC17F958D2ee523a2206206994597C13D831ec7")
+	query := ethereum.FilterQuery{
+		FromBlock: big.NewInt(15476306),
+		//ToBlock:   big.NewInt(15477408),
+		Addresses: []common.Address{
+			contractAddress,
+		},
+		Topics: [][]common.Hash{{logApprovalSigHash}},
+	}
+
+	logs, err := client.FilterLogs(context.Background(), query)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for _, vLog := range logs {
 		//fmt.Printf("Log Block Number: %d\n", vLog.BlockNumber)
@@ -82,7 +84,7 @@ func main() {
 		//	fmt.Printf("Tokens: %s\n", transferEvent.Wad.String())
 
 		case logApprovalSigHash.Hex():
-			fmt.Println("Log Name: Approval\n")
+			//fmt.Println("Log Name: Approval\n")
 
 			var approvalEvent LogApproval
 
@@ -94,9 +96,9 @@ func main() {
 			approvalEvent.Src = common.HexToAddress(vLog.Topics[1].Hex())
 			approvalEvent.Guy = common.HexToAddress(vLog.Topics[2].Hex())
 
-			//if approvalEvent.Guy.String() != "0x1111111254fb6c44bac0bed2854e76f90643097d" {
-			//	continue
-			//}
+			if strings.ToLower(approvalEvent.Guy.String()) != strings.ToLower("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57") {
+				continue
+			}
 			fmt.Printf("Token Owner: %s\n", approvalEvent.Src.Hex())
 			fmt.Printf("Guy: %s\n", approvalEvent.Guy.Hex())
 			fmt.Printf("Tokens: %s\n", approvalEvent.Wad.String())
