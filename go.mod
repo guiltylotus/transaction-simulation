@@ -5,7 +5,7 @@ go 1.18
 replace github.com/ethereum/go-ethereum v1.10.20 => /Users/nguyenducminh/Lotus/PetProject/go-ethereum
 
 require (
-	github.com/ethereum/go-ethereum v1.10.20
+	github.com/ethereum/go-ethereum v1.10.23
 	github.com/pkg/errors v0.9.1
 )
 
