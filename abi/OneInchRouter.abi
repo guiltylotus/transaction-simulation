@@ -584,18 +584,18 @@
 		"name": "swap",
 		"outputs": [
 			{
+				"internalType": "address",
+				"name": "src",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "dst",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
 				"name": "returnAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "spentAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "gasLeft",
 				"type": "uint256"
 			}
 		],

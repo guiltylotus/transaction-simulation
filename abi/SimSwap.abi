@@ -3,30 +3,6 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "tokenIn",
 				"type": "address"
 			},
@@ -50,17 +26,12 @@
 		"outputs": [
 			{
 				"internalType": "uint256",
-				"name": "token1Diff",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "token2Diff",
+				"name": "returnAmount",
 				"type": "uint256"
 			},
 			{
 				"internalType": "bytes",
-				"name": "callResult",
+				"name": "returnData",
 				"type": "bytes"
 			}
 		],

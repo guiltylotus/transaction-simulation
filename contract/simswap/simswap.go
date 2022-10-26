@@ -30,7 +30,7 @@ var (
 
 // SimSwapMetaData contains all meta data concerning the SimSwap contract.
 var SimSwapMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenIn\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenOut\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"simswap\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"token1Diff\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"token2Diff\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"callResult\",\"type\":\"bytes\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenIn\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenOut\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"simswap\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"returnAmount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"returnData\",\"type\":\"bytes\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
 }
 
 // SimSwapABI is the input ABI used to generate the binding from.
@@ -179,44 +179,23 @@ func (_SimSwap *SimSwapTransactorRaw) Transact(opts *bind.TransactOpts, method s
 	return _SimSwap.Contract.contract.Transact(opts, method, params...)
 }
 
-// Approve is a paid mutator transaction binding the contract method 0x7e5465ba.
-//
-// Solidity: function approve(address token, address spender) returns(uint256)
-func (_SimSwap *SimSwapTransactor) Approve(opts *bind.TransactOpts, token common.Address, spender common.Address) (*types.Transaction, error) {
-	return _SimSwap.contract.Transact(opts, "approve", token, spender)
-}
-
-// Approve is a paid mutator transaction binding the contract method 0x7e5465ba.
-//
-// Solidity: function approve(address token, address spender) returns(uint256)
-func (_SimSwap *SimSwapSession) Approve(token common.Address, spender common.Address) (*types.Transaction, error) {
-	return _SimSwap.Contract.Approve(&_SimSwap.TransactOpts, token, spender)
-}
-
-// Approve is a paid mutator transaction binding the contract method 0x7e5465ba.
-//
-// Solidity: function approve(address token, address spender) returns(uint256)
-func (_SimSwap *SimSwapTransactorSession) Approve(token common.Address, spender common.Address) (*types.Transaction, error) {
-	return _SimSwap.Contract.Approve(&_SimSwap.TransactOpts, token, spender)
-}
-
 // Simswap is a paid mutator transaction binding the contract method 0x96d27420.
 //
-// Solidity: function simswap(address tokenIn, address tokenOut, address router, bytes data) payable returns(uint256 token1Diff, uint256 token2Diff, bytes callResult)
+// Solidity: function simswap(address tokenIn, address tokenOut, address router, bytes data) payable returns(uint256 returnAmount, bytes returnData)
 func (_SimSwap *SimSwapTransactor) Simswap(opts *bind.TransactOpts, tokenIn common.Address, tokenOut common.Address, router common.Address, data []byte) (*types.Transaction, error) {
 	return _SimSwap.contract.Transact(opts, "simswap", tokenIn, tokenOut, router, data)
 }
 
 // Simswap is a paid mutator transaction binding the contract method 0x96d27420.
 //
-// Solidity: function simswap(address tokenIn, address tokenOut, address router, bytes data) payable returns(uint256 token1Diff, uint256 token2Diff, bytes callResult)
+// Solidity: function simswap(address tokenIn, address tokenOut, address router, bytes data) payable returns(uint256 returnAmount, bytes returnData)
 func (_SimSwap *SimSwapSession) Simswap(tokenIn common.Address, tokenOut common.Address, router common.Address, data []byte) (*types.Transaction, error) {
 	return _SimSwap.Contract.Simswap(&_SimSwap.TransactOpts, tokenIn, tokenOut, router, data)
 }
 
 // Simswap is a paid mutator transaction binding the contract method 0x96d27420.
 //
-// Solidity: function simswap(address tokenIn, address tokenOut, address router, bytes data) payable returns(uint256 token1Diff, uint256 token2Diff, bytes callResult)
+// Solidity: function simswap(address tokenIn, address tokenOut, address router, bytes data) payable returns(uint256 returnAmount, bytes returnData)
 func (_SimSwap *SimSwapTransactorSession) Simswap(tokenIn common.Address, tokenOut common.Address, router common.Address, data []byte) (*types.Transaction, error) {
 	return _SimSwap.Contract.Simswap(&_SimSwap.TransactOpts, tokenIn, tokenOut, router, data)
 }
