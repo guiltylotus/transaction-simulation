@@ -56,6 +56,11 @@ type reqMessage struct {
 }
 
 var (
+	ChainID   = 42161
+	ChainName = "arbitrum"
+	TokenOut  = "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+	RawUrl    = "https://arbitrum.kyberengineering.io"
+
 	SimSwapAddress = common.HexToAddress("0x1111111111111111111111111111111111111100")
 	MyWallet       = common.HexToAddress("0x1111111111111111111111111111111111111100")
 	Router         = common.HexToAddress("0x617Dee16B86534a5d792A4d7A62FB491B544111E") //kyberswap
@@ -70,17 +75,17 @@ var (
 )
 
 func main() {
-	tokenAddress := TokenWhiteList(1)
+	tokenAddress := TokenWhiteList(ChainID)
 	for address, token := range tokenAddress {
 		TokenInContract = common.HexToAddress(address)
 		fmt.Println("----------------------------------")
 		fmt.Println("address", address)
 		fmt.Println("symbol", token.Symbol)
-		fmt.Println("symbol", token.Decimals)
+		fmt.Println("decimals", token.Decimals)
 
 		var encodedData string
 		for i := 0; i <= 10; i++ {
-			encodedData = KSEncodedData("0xdac17f958d2ee523a2206206994597c13d831ec7")
+			encodedData = KSEncodedData(ChainName, TokenOut)
 			if encodedData != "" {
 				break
 			}
@@ -89,9 +94,10 @@ func main() {
 			continue
 		} else {
 			fmt.Println("get encoded data: DONE")
+			//fmt.Println("encodedData", encodedData)
 		}
 		InputData = encodedData
-		balanceSlot, allowanceSlot := FindSlot()
+		balanceSlot, allowanceSlot := FindSlot(0, 200)
 		fmt.Println("slots", balanceSlot, allowanceSlot)
 
 		obj, ok := tokenAddress[address]
@@ -117,7 +123,6 @@ func TokenWhiteList(chain int) TokenAddress {
 		Message string                 `json:"message"`
 		Data    map[string]interface{} `json:"data"`
 	}
-
 	apiUrl := fmt.Sprintf("https://ks-setting.kyberswap.com/api/v1/tokens?chainIds=%v&isWhitelisted=true&pageSize=100&page=1", chain)
 
 	resp, err := http.Get(apiUrl)
@@ -150,14 +155,14 @@ func TokenWhiteList(chain int) TokenAddress {
 	return tokenAddress
 }
 
-func KSEncodedData(tokenOut string) string {
+func KSEncodedData(chain string, tokenOut string) string {
 	type EncodedDataResponse struct {
 		EncodedSwapData string `json:"encodedSwapData"`
 	}
 
 	apiUrl := fmt.Sprintf(
-		"https://aggregator-api.kyberswap.com/ethereum/route/encode?tokenIn=%v&tokenOut=%v&amountIn=10000000000000000000&slippageTolerance=50&to=0x1111111111111111111111111111111111111100",
-		TokenInContract.String(), tokenOut)
+		"https://aggregator-api.kyberswap.com/%v/route/encode?tokenIn=%v&tokenOut=%v&amountIn=10000000000000000000&slippageTolerance=50&to=0x1111111111111111111111111111111111111100",
+		chain, TokenInContract.String(), tokenOut)
 	resp, err := http.Get(apiUrl)
 	if err != nil {
 		panic(err)
@@ -175,9 +180,9 @@ func KSEncodedData(tokenOut string) string {
 	return encodedDataResponse.EncodedSwapData
 }
 
-func FindSlot() (int64, int64) {
-	for balanceSlot := 0; balanceSlot <= 200; balanceSlot++ {
-		for allowanceSlot := balanceSlot + 1; allowanceSlot <= balanceSlot+3; allowanceSlot++ {
+func FindSlot(minRange, maxRange int) (int64, int64) {
+	for balanceSlot := minRange; balanceSlot <= maxRange; balanceSlot++ {
+		for allowanceSlot := balanceSlot + 1; allowanceSlot <= balanceSlot+20; allowanceSlot++ {
 			if balanceSlot == allowanceSlot {
 				continue
 			}
@@ -185,11 +190,14 @@ func FindSlot() (int64, int64) {
 			TokenInBalanceOfSlot = strconv.Itoa(balanceSlot)
 
 			commonContract := InitCommonContract()
-			//rawurl := "https://polygon.kyberengineering.io"
+			rawurl := RawUrl
+
+			//rawurl := "https://arbitrum.kyberengineering.io/"
+			//rawurl := "https://opt-mainnet.g.alchemy.com/v2/N7gZFcuMkhLTTpdsRLEcDXYIJssj6GsI"
 			//rawurl := "https://avalanche.kyberengineering.io"
 			//rawurl := "https://bsc.kyberengineering.io"
 			//rawurl := "https://mainnet.infura.io/v3/c8a0f577c41240ab90d542d4c1f9f1ba"
-			rawurl := "https://ethereum.kyberengineering.io"
+			//rawurl := "https://ethereum.kyberengineering.io"
 
 			simClient, err := NewClient(rawurl, SimSwapAddress, commonContract)
 			if err != nil {
